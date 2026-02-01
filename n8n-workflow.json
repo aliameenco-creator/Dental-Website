@@ -1,0 +1,144 @@
+{
+  "name": "Dental AI Receptionist",
+  "nodes": [
+    {
+      "id": "webhook-1",
+      "name": "Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "path": "dental-chat",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "dental-chat"
+    },
+    {
+      "id": "set-1",
+      "name": "Prepare Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-message",
+              "name": "userMessage",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "session-id",
+              "name": "sessionId",
+              "value": "={{ $json.body.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ai-agent-1",
+      "name": "Dental AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [680, 300],
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a friendly AI receptionist for Smile Dental Care, a family dental practice.\n\nABOUT THE PRACTICE:\n- Location: 123 Main Street, Anytown\n- Hours: Monday-Friday 8am-6pm, Saturday 9am-2pm\n- Phone: (555) 123-4567\n\nSERVICES & PRICING:\n- Routine Cleaning: $120-180\n- Teeth Whitening: $299-499\n- Dental Implants: $3,000-5,000 (consultation required)\n- Dental Checkups: $75-150\n- Fillings: $150-350\n- Emergency Care: Available same-day\n- Accepts most insurance plans\n\nYOUR ROLE:\n1. Answer questions about services, pricing, and availability\n2. Help patients understand what to expect\n3. Collect contact information for callbacks\n4. Identify urgent needs\n\nGUIDELINES:\n- Be warm, friendly, and professional\n- If asked about specific medical advice, recommend scheduling a consultation\n- For complex pricing, provide ranges and suggest an in-person estimate\n- Always offer to have someone call them back\n- If they want to book, collect: Name, Phone, Best time to call, Reason for visit"
+        },
+        "promptType": "define",
+        "text": "={{ $json.userMessage }}"
+      }
+    },
+    {
+      "id": "set-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "response",
+              "name": "response",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "session",
+              "name": "sessionId",
+              "value": "={{ $('Prepare Message').item.json.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "respond-1",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"response\": $json.response, \"sessionId\": $json.sessionId } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "openai-1",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [680, 500],
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Chat Webhook": {
+      "main": [[{"node": "Prepare Message", "type": "main", "index": 0}]]
+    },
+    "Prepare Message": {
+      "main": [[{"node": "Dental AI Agent", "type": "main", "index": 0}]]
+    },
+    "Dental AI Agent": {
+      "main": [[{"node": "Format Response", "type": "main", "index": 0}]]
+    },
+    "Format Response": {
+      "main": [[{"node": "Respond to Webhook", "type": "main", "index": 0}]]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [[{"node": "Dental AI Agent", "type": "ai_languageModel", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
