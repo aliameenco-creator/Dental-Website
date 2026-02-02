@@ -11,7 +11,7 @@ const team = [
     credentials: ["DDS, University of Michigan", "American Dental Association", "Academy of General Dentistry"],
   },
   {
-    name: "Dr. James Chen",
+    name: "Dr. Ali Chuhfan",
     role: "Cosmetic Dentistry Specialist",
     bio: "Dr. Chen specializes in cosmetic procedures and has transformed thousands of smiles with his artistic approach to dentistry.",
     credentials: ["DMD, Harvard School of Dental Medicine", "American Academy of Cosmetic Dentistry"],
